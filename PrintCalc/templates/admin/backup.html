@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+
+{% block title %}إدارة النسخ الاحتياطية{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-database"></i> إدارة النسخ الاحتياطية</h2>
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('admin_dashboard') }}">الإدارة</a></li>
+            <li class="breadcrumb-item active">النسخ الاحتياطية</li>
+        </ol>
+    </nav>
+</div>
+
+<!-- Create Backup Section -->
+<div class="card mb-4">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0">
+            <i class="fas fa-plus-circle"></i> إنشاء نسخة احتياطية جديدة
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-4">
+                <form action="{{ url_for('create_backup') }}" method="POST" class="d-inline">
+                    <input type="hidden" name="backup_type" value="full">
+                    <button type="submit" class="btn btn-success btn-lg w-100 mb-2">
+                        <i class="fas fa-database"></i><br>
+                        نسخة احتياطية كاملة
+                    </button>
+                    <small class="text-muted d-block">نسخ قاعدة البيانات + تصدير البيانات</small>
+                </form>
+            </div>
+            <div class="col-md-4">
+                <form action="{{ url_for('create_backup') }}" method="POST" class="d-inline">
+                    <input type="hidden" name="backup_type" value="database">
+                    <button type="submit" class="btn btn-info btn-lg w-100 mb-2">
+                        <i class="fas fa-hdd"></i><br>
+                        نسخ قاعدة البيانات فقط
+                    </button>
+                    <small class="text-muted d-block">نسخ ملف قاعدة البيانات الأصلي</small>
+                </form>
+            </div>
+            <div class="col-md-4">
+                <form action="{{ url_for('create_backup') }}" method="POST" class="d-inline">
+                    <input type="hidden" name="backup_type" value="export">
+                    <button type="submit" class="btn btn-warning btn-lg w-100 mb-2">
+                        <i class="fas fa-file-export"></i><br>
+                        تصدير البيانات
+                    </button>
+                    <small class="text-muted d-block">تصدير البيانات بصيغة JSON</small>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Backup Instructions -->
+<div class="alert alert-info">
+    <h6 class="alert-heading">
+        <i class="fas fa-info-circle"></i> أهمية النسخ الاحتياطية
+    </h6>
+    <ul class="mb-0">
+        <li><strong>النسخة الكاملة:</strong> تشمل ملف قاعدة البيانات الأصلي + تصدير البيانات بصيغة JSON للحفظ المزدوج</li>
+        <li><strong>نسخ قاعدة البيانات:</strong> نسخة مطابقة من ملف قاعدة البيانات يمكن استعادتها مباشرة</li>
+        <li><strong>تصدير البيانات:</strong> البيانات بصيغة نصية يمكن قراءتها وإعادة استيرادها لاحقاً</li>
+        <li><strong>يُنصح بعمل نسخة احتياطية يومياً</strong> للحفاظ على أمان البيانات</li>
+    </ul>
+</div>
+
+<!-- Existing Backups -->
+{% if backups %}
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="fas fa-list"></i> النسخ الاحتياطية الموجودة ({{ backups|length }} ملف)
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th style="width: 30%;">اسم الملف</th>
+                        <th style="width: 15%;">النوع</th>
+                        <th style="width: 15%;">الحجم</th>
+                        <th style="width: 20%;">تاريخ الإنشاء</th>
+                        <th style="width: 20%;">الإجراءات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for backup in backups %}
+                    <tr>
+                        <td>
+                            <code>{{ backup.filename }}</code>
+                        </td>
+                        <td>
+                            {% if backup.type == 'database' %}
+                                <span class="badge bg-info">قاعدة بيانات</span>
+                            {% elif backup.type == 'export' %}
+                                <span class="badge bg-warning">تصدير بيانات</span>
+                            {% else %}
+                                <span class="badge bg-secondary">معلومات</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if backup.size < 1024 %}
+                                {{ backup.size }} بايت
+                            {% elif backup.size < 1024*1024 %}
+                                {{ "%.1f"|format(backup.size / 1024) }} كيلوبايت
+                            {% else %}
+                                {{ "%.1f"|format(backup.size / (1024*1024)) }} ميجابايت
+                            {% endif %}
+                        </td>
+                        <td>
+                            <small>{{ backup.created_at.strftime('%Y-%m-%d') }}</small><br>
+                            <small class="text-muted">{{ backup.created_at.strftime('%H:%M:%S') }}</small>
+                        </td>
+                        <td>
+                            <div class="btn-group" role="group">
+                                <a href="{{ url_for('download_backup', filename=backup.filename) }}" 
+                                   class="btn btn-outline-primary btn-sm" 
+                                   title="تحميل الملف">
+                                    <i class="fas fa-download"></i>
+                                </a>
+                                <a href="{{ url_for('delete_backup', filename=backup.filename) }}" 
+                                   class="btn btn-outline-danger btn-sm" 
+                                   onclick="return confirm('هل أنت متأكد من حذف هذه النسخة الاحتياطية؟')"
+                                   title="حذف الملف">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="text-center py-5">
+    <i class="fas fa-folder-open fa-3x text-muted mb-3"></i>
+    <h4 class="text-muted">لا توجد نسخ احتياطية</h4>
+    <p class="text-muted">ابدأ بإنشاء نسخة احتياطية الآن لحماية بياناتك</p>
+    <form action="{{ url_for('create_backup') }}" method="POST" class="d-inline">
+        <input type="hidden" name="backup_type" value="full">
+        <button type="submit" class="btn btn-primary btn-lg">
+            <i class="fas fa-plus"></i> إنشاء أول نسخة احتياطية
+        </button>
+    </form>
+</div>
+{% endif %}
+
+<!-- Storage Location Info -->
+<div class="alert alert-secondary mt-4">
+    <h6 class="alert-heading">
+        <i class="fas fa-folder"></i> مكان حفظ النسخ الاحتياطية
+    </h6>
+    <p class="mb-0">
+        يتم حفظ جميع النسخ الاحتياطية في مجلد: <code>PrintCalc/backup/</code><br>
+        <small class="text-muted">تأكد من نسخ هذا المجلد إلى مكان آمن خارج الخادم بانتظام</small>
+    </p>
+</div>
+
+{% endblock %}

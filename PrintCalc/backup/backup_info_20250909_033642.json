@@ -1,0 +1,7 @@
+{
+  "backup_date": "2025-09-09T03:36:42.152589",
+  "database_file": "backup/db_backup_20250909_033642.db",
+  "backup_type": "database",
+  "file_size": 57344,
+  "original_path": "data/printing_costs.db"
+}
